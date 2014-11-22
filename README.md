@@ -1,7 +1,7 @@
 sumcheck
 ========
 
-Checksum and TimeMachine verification utility to combat data rot on your hard drive.
+Checksum and TimeMachine verification utility to combat [data rot](http://en.m.wikipedia.org/wiki/Data_degradation) on your hard drive.
 
 sumcheck keeps a database of checksums of all the files in your filesystem.  When started, it will check all the know files against their previous checksums, and store new checksums for files it hasn't seen.  It can also compare the files to a backup copy, and for Mac users, it can automatically find your TimeMachine backup and compare against that.
 
