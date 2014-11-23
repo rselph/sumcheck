@@ -2,9 +2,8 @@
 package main
 
 type compareJob struct {
-	f1, f2 *fileJob
-	err    error
-	//description string
+	f1, f2      *fileJob
+	description string
 }
 
 func Comparator(in1, in2 chan *fileJob, out chan *compareJob) {
@@ -26,13 +25,15 @@ func Comparator(in1, in2 chan *fileJob, out chan *compareJob) {
 
 		switch {
 		case c.f1.Err != nil || c.f2.Err != nil:
-			break
+			c.description = "ERROR: "
 
 		case !ignoreMTime && c.f1.Info.ModTime().UnixNano() > c.f2.Info.ModTime().UnixNano():
-			c.err = code_NEWER
+			c.description = "ERROR: "
+			c.f1.Err = &myError{"File has been changed since backup was made."}
 
 		case c.f1.Info.Size() != c.f2.Info.Size() || c.f1.Chksum != c.f2.Chksum:
-			c.err = code_BAD_SUM
+			c.description = "FAIL: "
+			c.f1.Err = &myError{"file content mismatch"}
 		}
 
 		out <- c

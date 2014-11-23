@@ -149,7 +149,7 @@ func main() {
 		out1_chan := make(chan *fileJob, chan_depth)
 		defer close(out1_chan)
 
-		go Walker(in1_chan, nil, check_dir, "")
+		go Walker(in1_chan, check_dir)
 		go Calculator(in1_chan, out1_chan, buffSize)
 		go dbFileChecker(out1_chan, db_out, db)
 	} else {
@@ -164,7 +164,7 @@ func main() {
 		comp_out := make(chan *compareJob, chan_depth)
 		defer close(comp_out)
 
-		go Walker(in1_chan, in2_chan, check_dir, copy_dir)
+		go DualWalker(in1_chan, in2_chan, check_dir, copy_dir)
 		go Calculator(in1_chan, out1_chan, buffSize)
 		go Calculator(in2_chan, out2_chan, buffSize)
 		go Comparator(out1_chan, out2_chan, comp_out)
@@ -176,49 +176,26 @@ func main() {
 			break
 		}
 
-		if c.err != code_OK {
-			fmt.Printf("%s: ", err.Error())
-			if c.f1 != nil {
-				fmt.Printf("%s ", c.f1.Fpath)
-			}
-			if c.f2 != nil {
-				fmt.Printf("%s ", c.f2.Fpath)
-			}
-			fmt.Printf("\n")
+		printErr := false
+		switch {
+		case c.f1 != nil && c.f1.Err != nil:
+			c.description += "   " + c.f1.Err.Error()
+			printErr = true
+
+		case c.f2 != nil && c.f2.Err != nil:
+			c.description += "   " + c.f2.Err.Error()
+			printErr = true
+
+		case verbose:
+			c.description = "OK"
+			printErr = true
 		}
 
-		if c.f1.Err != code_OK {
-			if !quiet || c.f1.Err == code_BAD_SUM {
-				fmt.Println(c.f1.Err.Error())
+		if printErr {
+			if !quiet || strings.Contains(c.description, "FAIL") {
+				fmt.Println(c.f1.Fpath, c.description)
 			}
 		}
-
-		if c.f2.Err != code_OK {
-			if !quiet || c.f2.Err == code_BAD_SUM {
-				fmt.Println(c.f1.Err.Error())
-			}
-		}
-
-		//printErr := false
-		//switch {
-		//case c.f1 != nil && c.f1.Err != nil:
-		//	c.description += "   " + c.f1.Err.Error()
-		//	printErr = true
-
-		//case c.f2 != nil && c.f2.Err != nil:
-		//	c.description += "   " + c.f2.Err.Error()
-		//	printErr = true
-
-		//case verbose:
-		//	c.description = "OK"
-		//	printErr = true
-		//}
-
-		//if printErr {
-		//	if !quiet || strings.Contains(c.description, "FAIL") {
-		//		fmt.Println(c.f1.Fpath, c.description)
-		//	}
-		//}
 	}
 }
 
@@ -265,19 +242,8 @@ func getVolNameAndPath(target string) (volName, path string) {
 
 type myError struct {
 	description string
-	info        string
 }
 
 func (e *myError) Error() string {
-	if e.info != "" {
-		return e.description + ": " + e.info
-	}
 	return e.description
 }
-
-var code_OK *myError = nil
-var code_SKIPPED *myError = &myError{"File skipped", ""}
-var code_NEW_SUM *myError = &myError{"New checksum calculated", ""}
-var code_BAD_SUM *myError = &myError{"Checksum mismatch", ""}
-var code_NOT_FOUND *myError = &myError{"File not found", ""}
-var code_NEWER *myError = &myError{"File is newer than backup", ""}

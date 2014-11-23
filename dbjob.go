@@ -174,24 +174,29 @@ func CheckInDB(f *fileJob, fdb *fileDB) {
 		log.Fatal(err)
 
 	case row == nil:
+		//fmt.Print("-")
 		// No entry.  Make one.
 		err = fdb.insertOrReplace(f)
 		if err != nil {
 			log.Fatal(err)
 		}
-		f.Err = code_NEW_SUM
 
 	default:
+		//fmt.Print(".")
 		// Got a value.  Compare it against calculated values.
 		// If file was deliberately changed, replace the row with new cheksum
 		err = nil
 		switch {
 		case !ignoreMTime && row["MOD_TIME"] != f.Info.ModTime().UnixNano():
+			//fmt.Print("+")
 			err = fdb.insertOrReplace(f)
-			f.Err = code_NEW_SUM
 
 		case row["CHKSUM"] != int64(f.Chksum):
-			f.Err = code_BAD_SUM
+			if ignoreMTime {
+				f.Err = &myError{"Checksum has changed."}
+			} else {
+				f.Err = &myError{"Checksum has changed, even though mtime hasn't."}
+			}
 		}
 
 		if err != nil {
@@ -219,9 +224,15 @@ func dbCompareChecker(in, out chan *compareJob, db *sqlite3.Conn) {
 
 		if c.f1.Err == nil {
 			CheckInDB(c.f1, fdb)
+			if c.f1.Err != nil {
+				c.description = "FAIL: "
+			}
 		}
 		if c.f2.Err == nil {
 			CheckInDB(c.f2, fdb)
+			if c.f2.Err != nil {
+				c.description = "FAIL: "
+			}
 		}
 
 		out <- c
@@ -247,6 +258,9 @@ func dbFileChecker(in chan *fileJob, out chan *compareJob, db *sqlite3.Conn) {
 		c.f1 = f
 		if f.Err == nil {
 			CheckInDB(f, fdb)
+			if f.Err != nil {
+				c.description = "FAIL: "
+			}
 		}
 
 		out <- c
