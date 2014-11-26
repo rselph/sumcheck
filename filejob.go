@@ -11,24 +11,28 @@ import (
 type fileJob struct {
 	Fpath  string
 	Info   os.FileInfo
-	Err    error
+	Err    *myError
 	Chksum uint64
 }
 
 func (f *fileJob) CalculateChecksum(h hash.Hash64, data []byte) {
+	var err error
+
 	if f.Err != nil {
 		return
 	}
 
 	if f.Info == nil {
-		f.Info, f.Err = os.Stat(f.Fpath)
+		f.Info, err = os.Stat(f.Fpath)
+		f.Err = WrapError(err)
 		if f.Err != nil {
 			return
 		}
 	}
 
 	var file *os.File
-	file, f.Err = os.Open(f.Fpath)
+	file, err = os.Open(f.Fpath)
+	f.Err = WrapError(err)
 	if f.Err != nil {
 		return
 	}
@@ -38,7 +42,7 @@ func (f *fileJob) CalculateChecksum(h hash.Hash64, data []byte) {
 	for {
 		count, err := file.Read(data)
 		if err != nil && err != io.EOF {
-			f.Err = err
+			f.Err = WrapError(err)
 			return
 		}
 		if count == 0 {

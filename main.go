@@ -149,7 +149,7 @@ func main() {
 		out1_chan := make(chan *fileJob, chan_depth)
 		defer close(out1_chan)
 
-		go Walker(in1_chan, check_dir)
+		go Walker(in1_chan, nil, check_dir, "")
 		go Calculator(in1_chan, out1_chan, buffSize)
 		go dbFileChecker(out1_chan, db_out, db)
 	} else {
@@ -164,7 +164,7 @@ func main() {
 		comp_out := make(chan *compareJob, chan_depth)
 		defer close(comp_out)
 
-		go DualWalker(in1_chan, in2_chan, check_dir, copy_dir)
+		go Walker(in1_chan, in2_chan, check_dir, copy_dir)
 		go Calculator(in1_chan, out1_chan, buffSize)
 		go Calculator(in2_chan, out2_chan, buffSize)
 		go Comparator(out1_chan, out2_chan, comp_out)
@@ -176,24 +176,19 @@ func main() {
 			break
 		}
 
-		printErr := false
-		switch {
-		case c.f1 != nil && c.f1.Err != nil:
-			c.description += "   " + c.f1.Err.Error()
-			printErr = true
-
-		case c.f2 != nil && c.f2.Err != nil:
-			c.description += "   " + c.f2.Err.Error()
-			printErr = true
-
-		case verbose:
-			c.description = "OK"
-			printErr = true
+		if c.err != nil {
+			fmt.Println(c.err.Error())
 		}
 
-		if printErr {
-			if !quiet || strings.Contains(c.description, "FAIL") {
-				fmt.Println(c.f1.Fpath, c.description)
+		if c.f1.Err != nil {
+			if !quiet || c.f1.Err.code == code_BAD_SUM {
+				fmt.Println(c.f1.Err.Error())
+			}
+		}
+
+		if c.f2 != nil && c.f2.Err != nil {
+			if !quiet || c.f2.Err.code == code_BAD_SUM {
+				fmt.Println(c.f1.Err.Error())
 			}
 		}
 	}
@@ -241,9 +236,59 @@ func getVolNameAndPath(target string) (volName, path string) {
 }
 
 type myError struct {
-	description string
+	code myErrorCode
+	info string
 }
 
 func (e *myError) Error() string {
-	return e.description
+	switch e.code {
+	case code_OK:
+		return "OK"
+
+	case code_SKIPPED:
+		return "skipped: " + e.info
+
+	case code_NEW_SUM:
+		return "new checksum: " + e.info
+
+	case code_BAD_SUM:
+		return "BAD CHECKSUM: " + e.info
+
+	case code_NOT_FOUND:
+		return "file not found: " + e.info
+
+	case code_NEWER:
+		return "file newer: " + e.info
+
+	default:
+		return e.info
+	}
 }
+
+func NewError(code myErrorCode, f *fileJob, info string) (err *myError) {
+	if f != nil {
+		err = &myError{code, f.Info.Name() + " " + info}
+	} else {
+		err = &myError{code, info}
+	}
+	return err
+}
+
+func WrapError(err error) (myerr *myError) {
+	if err == nil {
+		return nil
+	}
+	return &myError{code_OTHER, err.Error()}
+}
+
+type myErrorCode int
+
+const (
+	code_OK myErrorCode = iota
+	code_SKIPPED
+	code_NEW_SUM
+	code_BAD_SUM
+	code_NOT_FOUND
+	code_NEWER
+	code_OTHER
+)
