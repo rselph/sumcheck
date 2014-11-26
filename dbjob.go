@@ -2,7 +2,6 @@
 package main
 
 import (
-	"fmt"
 	"io"
 	"log"
 	"os/user"
@@ -81,28 +80,24 @@ func newFileDB(db *sqlite3.Conn) (fdb *fileDB) {
 
 	fdb.insert, err = db.Prepare("insert or replace into FILES (path, size, mod_time, mode, chksum) values ($path, $size, $mod_time, $mode, $chksum);")
 	if err != nil {
-		fmt.Println("Cannot create insert statement.")
 		fdb.Close()
 		log.Fatal(err)
 	}
 
 	fdb.get, err = db.Prepare("select size, mod_time, mode, chksum from FILES where path = $path;")
 	if err != nil {
-		fmt.Println("Cannot create select statement.")
 		fdb.Close()
 		log.Fatal(err)
 	}
 
 	fdb.begin, err = db.Prepare("BEGIN TRANSACTION;")
 	if err != nil {
-		fmt.Println("Cannot create begin transaction statement.")
 		fdb.Close()
 		log.Fatal(err)
 	}
 
 	fdb.commit, err = db.Prepare("COMMIT TRANSACTION;")
 	if err != nil {
-		fmt.Println("Cannot create commit transaction statement.")
 		fdb.Close()
 		log.Fatal(err)
 	}
@@ -111,7 +106,6 @@ func newFileDB(db *sqlite3.Conn) (fdb *fileDB) {
 
 	err = fdb.begin.Exec()
 	if err != nil {
-		fmt.Println("Cannot open initial transaction.")
 		fdb.Close()
 		log.Fatal(err)
 	}
@@ -145,7 +139,7 @@ func (fdb *fileDB) insertOrReplace(f *fileJob) {
 		fdb.batchCount = 0
 	}
 
-	f.Err = NewError(code_NEW_SUM, f, "no recorded chesksum.  New entry created.")
+	f.Err = NewError(code_NEW_SUM, f, "updating checksum")
 	return
 }
 

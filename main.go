@@ -125,9 +125,9 @@ func main() {
 	}
 
 	if !quiet {
-		fmt.Printf("check_dir: %s\n", check_dir)
+		fmt.Printf("Checking: %s\n", check_dir)
 		if copy_dir != "" {
-			fmt.Printf("copy_dir: %s\n", copy_dir)
+			fmt.Printf("Comparing with backup at: %s\n", copy_dir)
 		}
 	}
 
@@ -184,11 +184,13 @@ func main() {
 			if !quiet || c.f1.Err.code == code_BAD_SUM {
 				fmt.Println(c.f1.Err.Error())
 			}
+		} else if verbose && c.err == nil {
+			fmt.Println(NewError(code_OK, c.f1, "").Error())
 		}
 
 		if c.f2 != nil && c.f2.Err != nil {
 			if !quiet || c.f2.Err.code == code_BAD_SUM {
-				fmt.Println(c.f1.Err.Error())
+				fmt.Println(c.f2.Err.Error())
 			}
 		}
 	}
@@ -240,34 +242,40 @@ type myError struct {
 	info string
 }
 
-func (e *myError) Error() string {
+func (e *myError) Error() (output string) {
 	switch e.code {
 	case code_OK:
-		return "OK"
+		output = "ok"
 
 	case code_SKIPPED:
-		return "skipped: " + e.info
+		output = "skipped"
 
 	case code_NEW_SUM:
-		return "new checksum: " + e.info
+		output = "new checksum"
 
 	case code_BAD_SUM:
-		return "BAD CHECKSUM: " + e.info
+		output = "BAD CHECKSUM"
 
 	case code_NOT_FOUND:
-		return "file not found: " + e.info
+		output = "file not found"
 
 	case code_NEWER:
-		return "file newer: " + e.info
+		output = "file newer"
 
-	default:
-		return e.info
+	case code_OTHER:
+		output = "error"
 	}
+
+	if e.info != "" {
+		output += ": "
+		output += e.info
+	}
+	return
 }
 
 func NewError(code myErrorCode, f *fileJob, info string) (err *myError) {
 	if f != nil {
-		err = &myError{code, f.Info.Name() + " " + info}
+		err = &myError{code, f.Fpath + " " + info}
 	} else {
 		err = &myError{code, info}
 	}
