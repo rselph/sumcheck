@@ -140,8 +140,8 @@ func main() {
 
 	initWalkers()
 
-	db_out := make(chan *compareJob, chan_depth)
-	defer close(db_out)
+	final_out := make(chan *fileJob, chan_depth)
+	defer close(final_out)
 
 	if copy_dir == "" {
 		in1_chan := make(chan *fileJob, chan_depth)
@@ -151,7 +151,7 @@ func main() {
 
 		go Walker(in1_chan, nil, check_dir, "")
 		go Calculator(in1_chan, out1_chan, buffSize)
-		go dbFileChecker(out1_chan, db_out, db)
+		go dbChecker(out1_chan, final_out, db)
 	} else {
 		in1_chan := make(chan *fileJob, chan_depth)
 		defer close(in1_chan)
@@ -161,37 +161,27 @@ func main() {
 		defer close(out1_chan)
 		out2_chan := make(chan *fileJob, chan_depth)
 		defer close(out2_chan)
-		comp_out := make(chan *compareJob, chan_depth)
+		comp_out := make(chan *fileJob, chan_depth)
 		defer close(comp_out)
 
 		go Walker(in1_chan, in2_chan, check_dir, copy_dir)
 		go Calculator(in1_chan, out1_chan, buffSize)
 		go Calculator(in2_chan, out2_chan, buffSize)
 		go Comparator(out1_chan, out2_chan, comp_out)
-		go dbCompareChecker(comp_out, db_out, db)
+		go dbChecker(comp_out, final_out, db)
 	}
 
-	for c := range db_out {
-		if c == nil {
+	for f := range final_out {
+		if f == nil {
 			break
 		}
 
-		if c.err != nil {
-			fmt.Println(c.err.Error())
-		}
-
-		if c.f1.Err != nil {
-			if !quiet || c.f1.Err.code == code_BAD_SUM {
-				fmt.Println(c.f1.Err.Error())
+		if f.Err != nil {
+			if !quiet || f.Err.code == code_BAD_SUM {
+				fmt.Println(f.Err.Error())
 			}
-		} else if verbose && c.err == nil {
-			fmt.Println(NewError(code_OK, c.f1, "").Error())
-		}
-
-		if c.f2 != nil && c.f2.Err != nil {
-			if !quiet || c.f2.Err.code == code_BAD_SUM {
-				fmt.Println(c.f2.Err.Error())
-			}
+		} else if verbose {
+			fmt.Println(NewError(code_OK, f, "").Error())
 		}
 	}
 }
@@ -245,22 +235,22 @@ type myError struct {
 func (e *myError) Error() (output string) {
 	switch e.code {
 	case code_OK:
-		output = "ok"
+		output = "            ok"
 
 	case code_SKIPPED:
-		output = "skipped"
+		output = "       skipped"
 
 	case code_NEW_SUM:
-		output = "new checksum"
+		output = "  new checksum"
 
 	case code_BAD_SUM:
-		output = "BAD CHECKSUM"
+		output = "  BAD CHECKSUM"
 
 	case code_NOT_FOUND:
 		output = "file not found"
 
 	case code_NEWER:
-		output = "file newer"
+		output = "    file newer"
 
 	case code_OTHER:
 		output = "error"

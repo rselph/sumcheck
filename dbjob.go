@@ -191,29 +191,7 @@ func CheckInDB(f *fileJob, fdb *fileDB) {
 	return
 }
 
-func dbCompareChecker(in, out chan *compareJob, db *sqlite3.Conn) {
-	defer func() { out <- nil }()
-
-	fdb := newFileDB(db)
-	defer fdb.Close()
-
-	for c := range in {
-		if c == nil {
-			return
-		}
-
-		if c.f1.Err == nil {
-			CheckInDB(c.f1, fdb)
-		}
-		if c.f2.Err == nil {
-			CheckInDB(c.f2, fdb)
-		}
-
-		out <- c
-	}
-}
-
-func dbFileChecker(in chan *fileJob, out chan *compareJob, db *sqlite3.Conn) {
+func dbChecker(in chan *fileJob, out chan *fileJob, db *sqlite3.Conn) {
 	defer func() { out <- nil }()
 
 	fdb := newFileDB(db)
@@ -224,12 +202,10 @@ func dbFileChecker(in chan *fileJob, out chan *compareJob, db *sqlite3.Conn) {
 			return
 		}
 
-		c := new(compareJob)
-		c.f1 = f
 		if f.Err == nil {
 			CheckInDB(f, fdb)
 		}
 
-		out <- c
+		out <- f
 	}
 }
