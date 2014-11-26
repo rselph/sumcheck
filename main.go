@@ -8,6 +8,7 @@ import (
 	"log"
 	"os"
 	"os/exec"
+	"os/user"
 	"path/filepath"
 	"runtime"
 	"strings"
@@ -19,6 +20,7 @@ var tm bool
 var chan_depth int
 var buffSize int64
 var ignoreMTime bool
+var dbpath string
 
 func main() {
 	runtime.GOMAXPROCS(4)
@@ -69,6 +71,7 @@ func main() {
 	flag.BoolVar(&ignoreMTime, "m", false, "Compare files, even if mtime is different.")
 	flag.IntVar(&chan_depth, "depth", 10, "Work queue depth")
 	flag.Int64Var(&buffSize, "buff", 128*1024*1024, "Size of IO buffer")
+	flag.StringVar(&dbpath, "db", "", "Path to database file")
 	flag.Parse()
 
 	switch {
@@ -131,9 +134,17 @@ func main() {
 		}
 	}
 
-	db, err := newDBConnection()
+	if dbpath == "" {
+		me, err := user.Current()
+		if err != nil {
+			log.Fatal(err)
+		}
+
+		dbpath = filepath.Join(me.HomeDir, ".tmverify.sqlite3")
+	}
+	db, err := newDBConnection(dbpath)
 	if err != nil {
-		fmt.Println("Cannot connect to db at ~/.tmverify.sqlite3")
+		fmt.Println("Cannot connect to db at " + dbpath)
 		log.Fatal(err)
 	}
 	defer closeDBConnection(db)

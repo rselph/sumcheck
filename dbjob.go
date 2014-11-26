@@ -4,8 +4,6 @@ package main
 import (
 	"io"
 	"log"
-	"os/user"
-	"path/filepath"
 
 	"code.google.com/p/go-sqlite/go1/sqlite3"
 )
@@ -47,13 +45,7 @@ func (fdb *fileDB) Close() {
 	}
 }
 
-func newDBConnection() (db *sqlite3.Conn, err error) {
-	me, err := user.Current()
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	path := filepath.Join(me.HomeDir, ".tmverify.sqlite3")
+func newDBConnection(path string) (db *sqlite3.Conn, err error) {
 	db, err = sqlite3.Open(path)
 
 	if err == nil {
