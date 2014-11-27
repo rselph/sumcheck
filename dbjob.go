@@ -16,9 +16,6 @@ type fileDB struct {
 	insert     *sqlite3.Stmt
 	batchCount int
 
-	begin  *sqlite3.Stmt
-	commit *sqlite3.Stmt
-
 	get     *sqlite3.Stmt
 	getArgs sqlite3.NamedArgs
 	//row    sqlite3.RowMap
@@ -26,21 +23,13 @@ type fileDB struct {
 
 func (fdb *fileDB) Close() {
 	if fdb.db != nil {
-		if fdb.commit != nil {
-			fdb.commit.Exec()
-		}
+		fdb.db.Commit()
 
 		if fdb.insert != nil {
 			fdb.insert.Close()
 		}
 		if fdb.get != nil {
 			fdb.get.Close()
-		}
-		if fdb.begin != nil {
-			fdb.begin.Close()
-		}
-		if fdb.commit != nil {
-			fdb.commit.Close()
 		}
 	}
 }
@@ -70,6 +59,8 @@ func newFileDB(db *sqlite3.Conn) (fdb *fileDB) {
 	var err error
 	fdb = &fileDB{}
 
+	fdb.db = db
+
 	fdb.insert, err = db.Prepare("insert or replace into FILES (path, size, mod_time, mode, chksum) values ($path, $size, $mod_time, $mode, $chksum);")
 	if err != nil {
 		fdb.Close()
@@ -82,21 +73,9 @@ func newFileDB(db *sqlite3.Conn) (fdb *fileDB) {
 		log.Fatal(err)
 	}
 
-	fdb.begin, err = db.Prepare("BEGIN TRANSACTION;")
-	if err != nil {
-		fdb.Close()
-		log.Fatal(err)
-	}
-
-	fdb.commit, err = db.Prepare("COMMIT TRANSACTION;")
-	if err != nil {
-		fdb.Close()
-		log.Fatal(err)
-	}
-
 	fdb.getArgs = make(sqlite3.NamedArgs)
 
-	err = fdb.begin.Exec()
+	err = fdb.db.Begin()
 	if err != nil {
 		fdb.Close()
 		log.Fatal(err)
@@ -120,11 +99,11 @@ func (fdb *fileDB) insertOrReplace(f *fileJob) {
 	}
 
 	if fdb.batchCount += 1; fdb.batchCount >= batchSize {
-		err = fdb.commit.Exec()
+		err = fdb.db.Commit()
 		if err != nil {
 			log.Fatal(err)
 		}
-		fdb.begin.Exec()
+		fdb.db.Begin()
 		if err != nil {
 			log.Fatal(err)
 		}
