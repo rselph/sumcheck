@@ -71,13 +71,13 @@ func Walker(out1, out2 chan *fileJob, path1, path2 string) {
 	var action fileActor
 	if out2 == nil {
 		action = func(node string, info os.FileInfo) {
-			out1 <- &fileJob{node, info, nil, 0}
+			out1 <- &fileJob{node, info, nil, 0, 0}
 		}
 	} else {
 		prefix_len := len(path1)
 		action = func(node string, info os.FileInfo) {
-			out1 <- &fileJob{node, info, nil, 0}
-			out2 <- &fileJob{filepath.Join(path2, node[prefix_len:]), nil, nil, 0}
+			out1 <- &fileJob{node, info, nil, 0, 0}
+			out2 <- &fileJob{filepath.Join(path2, node[prefix_len:]), nil, nil, 0, 0}
 		}
 		defer func() { out2 <- nil }()
 	}

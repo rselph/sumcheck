@@ -13,6 +13,7 @@ type fileJob struct {
 	Info   os.FileInfo
 	Err    *myError
 	Chksum uint64
+	IoLen  int64 // Actual amount of bytes read for stats
 }
 
 func (f *fileJob) CalculateChecksum(h hash.Hash64, data []byte) {
@@ -49,6 +50,7 @@ func (f *fileJob) CalculateChecksum(h hash.Hash64, data []byte) {
 			break
 		}
 		h.Write(data[:count])
+		f.IoLen += int64(count)
 	}
 
 	f.Chksum = h.Sum64()

@@ -12,6 +12,7 @@ import (
 	"path/filepath"
 	"runtime"
 	"strings"
+	"time"
 )
 
 var verbose bool
@@ -23,7 +24,7 @@ var ignoreMTime bool
 var dbpath string
 
 func main() {
-	runtime.GOMAXPROCS(4)
+	runtime.GOMAXPROCS(8)
 
 	var copy_dir string
 	var check_dir string
@@ -151,6 +152,8 @@ func main() {
 
 	initWalkers()
 
+	start := time.Now()
+
 	final_out := make(chan *fileJob, chan_depth)
 	defer close(final_out)
 
@@ -182,11 +185,18 @@ func main() {
 		go dbChecker(comp_out, final_out, db)
 	}
 
+	var totalIO int64
+	var fileCount int64
+
 	for f := range final_out {
 		if f == nil {
 			break
 		}
 
+		if f.IoLen >= 0 {
+			totalIO += f.IoLen
+			fileCount++
+		}
 		if f.Err != nil {
 			if !quiet || f.Err.code == code_BAD_SUM {
 				fmt.Println(f.Err.Error())
@@ -194,6 +204,18 @@ func main() {
 		} else if verbose {
 			fmt.Println(NewError(code_OK, f, "").Error())
 		}
+	}
+
+	stop := time.Now()
+
+	if !quiet {
+		elapsed := stop.Sub(start)
+		fmt.Printf("%v bytes in %v (%v bytes per sec.)\n",
+			Eng_int64(totalIO), elapsed.String(),
+			Eng(float64(totalIO)/elapsed.Seconds()))
+		fmt.Printf("%v files in %v (%v files per sec.)\n",
+			Eng_int64(fileCount), elapsed.String(),
+			Eng(float64(fileCount)/elapsed.Seconds()))
 	}
 }
 
