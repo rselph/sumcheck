@@ -16,19 +16,29 @@ type fileJob struct {
 	IoLen  int64 // Actual amount of bytes read for stats
 }
 
-func (f *fileJob) CalculateChecksum(h hash.Hash64, data []byte) {
+func (f *fileJob) Stat() {
+	var err error
+
+	if f.Info == nil {
+		f.Info, err = os.Stat(f.Fpath)
+		f.Err = WrapError(err)
+	}
+}
+
+func (f *fileJob) CalculateChecksum(
+	h hash.Hash64,
+	data []byte,
+	tr *ReadThrottler) {
+
 	var err error
 
 	if f.Err != nil {
 		return
 	}
 
-	if f.Info == nil {
-		f.Info, err = os.Stat(f.Fpath)
-		f.Err = WrapError(err)
-		if f.Err != nil {
-			return
-		}
+	f.Stat()
+	if f.Err != nil {
+		return
 	}
 
 	var file *os.File
@@ -40,8 +50,9 @@ func (f *fileJob) CalculateChecksum(h hash.Hash64, data []byte) {
 	defer file.Close()
 
 	h.Reset()
+	tr.SetReader(file)
 	for {
-		count, err := file.Read(data)
+		count, err := tr.Read(data)
 		if err != nil && err != io.EOF {
 			f.Err = WrapError(err)
 			return
@@ -56,18 +67,27 @@ func (f *fileJob) CalculateChecksum(h hash.Hash64, data []byte) {
 	f.Chksum = h.Sum64()
 }
 
-func Calculator(in, out chan *fileJob, buffSize int64) {
+func Calculator(in, out chan *fileJob, buffSize int64, rate float64) {
 	defer func() { out <- nil }()
 
 	h := fnv.New64()
 	data := make([]byte, buffSize)
+
+	var reader *ReadThrottler
+	if rate == 0.0 {
+		reader = NewReadThrottler(nil)
+	} else {
+		t := new(Throttler)
+		t.Start(rate)
+		reader = NewReadThrottler(t)
+	}
 
 	for f := range in {
 		if f == nil {
 			return
 		}
 
-		f.CalculateChecksum(h, data)
+		f.CalculateChecksum(h, data, reader)
 		out <- f
 	}
 }

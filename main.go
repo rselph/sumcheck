@@ -21,6 +21,7 @@ var chan_depth int
 var buffSize int64
 var ignoreMTime bool
 var dbpath string
+var dataRate float64
 
 func main() {
 	runtime.GOMAXPROCS(8)
@@ -72,6 +73,7 @@ func main() {
 	flag.IntVar(&chan_depth, "depth", 10, "Work queue depth")
 	flag.Int64Var(&buffSize, "buff", 128*1024*1024, "Size of IO buffer")
 	flag.StringVar(&dbpath, "db", "", "Path to database file")
+	flag.Float64Var(&dataRate, "rate", 0.0, "Max data rate in bytes/sec")
 	flag.Parse()
 
 	switch {
@@ -163,7 +165,7 @@ func main() {
 		defer close(out1_chan)
 
 		go Walker(in1_chan, nil, check_dir, "")
-		go Calculator(in1_chan, out1_chan, buffSize)
+		go Calculator(in1_chan, out1_chan, buffSize, dataRate)
 		go dbChecker(out1_chan, final_out, db)
 	} else {
 		in1_chan := make(chan *fileJob, chan_depth)
@@ -178,8 +180,8 @@ func main() {
 		defer close(comp_out)
 
 		go Walker(in1_chan, in2_chan, check_dir, copy_dir)
-		go Calculator(in1_chan, out1_chan, buffSize)
-		go Calculator(in2_chan, out2_chan, buffSize)
+		go Calculator(in1_chan, out1_chan, buffSize, dataRate/2.0)
+		go Calculator(in2_chan, out2_chan, buffSize, dataRate/2.0)
 		go Comparator(out1_chan, out2_chan, comp_out)
 		go dbChecker(comp_out, final_out, db)
 	}
