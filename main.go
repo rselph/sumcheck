@@ -1,4 +1,3 @@
-// tmverify project main.go
 package main
 
 import (
@@ -141,7 +140,7 @@ func main() {
 			log.Fatal(err)
 		}
 
-		dbpath = filepath.Join(me.HomeDir, ".tmverify.sqlite3")
+		dbpath = filepath.Join(me.HomeDir, ".sumcheck.sqlite3")
 	}
 	db, err := newDBConnection(dbpath)
 	if err != nil {

@@ -1,6 +1,6 @@
-// tmverify project doc.go
+// sumcheck project doc.go
 
 /*
-tmverify document
+sumcheck document
 */
 package main
