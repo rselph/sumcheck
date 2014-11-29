@@ -76,6 +76,19 @@ func main() {
 	flag.Float64Var(&dataRate, "rate", 0.0, "Max data rate in bytes/sec")
 	flag.Parse()
 
+	// If we're rate limiting, and the buff flag was not explicitly set,
+	// the cut down the buff size to 128k
+	buffSet := false
+	flag.Visit(func(f *flag.Flag) {
+		if f.Name == "buff" {
+			buffSet = true
+		}
+	})
+
+	if dataRate != 0.0 && !buffSet {
+		buffSize /= 1024
+	}
+
 	switch {
 	case flag.NArg() == 0:
 		// set check_dir to cwd
