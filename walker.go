@@ -1,4 +1,3 @@
-// walker.go
 package main
 
 import (

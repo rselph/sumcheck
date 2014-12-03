@@ -1,4 +1,3 @@
-// throttle.go
 package main
 
 import (

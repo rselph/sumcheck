@@ -1,4 +1,3 @@
-// filejob.go
 package main
 
 import (

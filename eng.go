@@ -1,4 +1,3 @@
-// eng.go
 package main
 
 import "math"

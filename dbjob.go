@@ -1,4 +1,3 @@
-// dbjob.go
 package main
 
 import (

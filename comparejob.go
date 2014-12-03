@@ -1,4 +1,3 @@
-// comparejob.go
 package main
 
 func Comparator(in1, in2 chan *fileJob, out chan *fileJob) {
