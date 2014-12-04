@@ -1,16 +1,13 @@
 package main
 
 import (
-	"bufio"
 	"flag"
 	"fmt"
 	"log"
 	"os"
-	"os/exec"
 	"os/user"
 	"path/filepath"
 	"runtime"
-	"strings"
 	"time"
 )
 
@@ -118,21 +115,17 @@ func main() {
 		fmt.Println("Cannot get absolute path of directory to check.")
 		log.Fatal(err)
 	}
-	check_vol, check_path := getVolNameAndPath(check_dir)
-	check_dir = filepath.Join("/Volumes", check_vol, check_path)
+	check_dir = volPath(check_dir)
 
 	if copy_dir == "" {
 		if tm {
 			// Set copy dir to latest tm backup
-			copy_dir_bytes, err := exec.Command("tmutil", "machinedirectory").CombinedOutput()
+			copy_dir, err := getTMDir()
 			if err != nil {
 				fmt.Println("Cannot get latest time machine directory.  Please supply a backup directory.")
-				fmt.Println(copy_dir)
 				log.Fatal(err)
 			}
-			copy_dir = strings.TrimSpace(string(copy_dir_bytes)) + "/Latest"
-
-			copy_dir = filepath.Join(copy_dir, check_vol, check_path)
+			copy_dir = filepath.Join(copy_dir, check_dir)
 		}
 	} else {
 		copy_dir, err = filepath.Abs(copy_dir)
@@ -231,47 +224,6 @@ func main() {
 			Eng_int64(fileCount), elapsed.String(),
 			Eng(float64(fileCount)/elapsed.Seconds()))
 	}
-}
-
-func getVolNameAndPath(target string) (volName, path string) {
-	target = filepath.ToSlash(target)
-	if strings.HasPrefix(target, "/Volumes/") {
-		targ_dirs := strings.Split(target, "/")
-		volName = targ_dirs[2]
-		path = strings.Join(targ_dirs[3:], "/")
-	} else {
-		volName = "*"
-
-		cmd := exec.Command("diskutil", "info", "/")
-		stdout, err := cmd.StdoutPipe()
-		if err != nil {
-			log.Fatal(err)
-		}
-		defer stdout.Close()
-
-		if err := cmd.Start(); err != nil {
-			log.Fatal(err)
-		}
-		stdlines := bufio.NewScanner(stdout)
-		for stdlines.Scan() {
-			line := stdlines.Text()
-			if strings.HasPrefix(line, "   Volume Name:") {
-				volName = strings.Fields(line)[2]
-			}
-		}
-		if err := stdlines.Err(); err != nil {
-			fmt.Println("reading output of diskutil:", err)
-			log.Fatal(err)
-		}
-		if err := cmd.Wait(); err != nil {
-			log.Fatal(err)
-		}
-
-		path = target[1:]
-	}
-
-	path = filepath.FromSlash(path)
-	return
 }
 
 type myError struct {
