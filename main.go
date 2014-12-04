@@ -91,7 +91,7 @@ func main() {
 		// set check_dir to cwd
 		check_dir, err = os.Getwd()
 		if err != nil {
-			fmt.Println("Cannot get current working directory.  Please supply a directory as an argument.")
+			log.Println("Cannot get current working directory.  Please supply a directory as an argument.")
 			log.Fatal(err)
 		}
 
@@ -107,12 +107,13 @@ func main() {
 	default:
 		// print usage, exit
 		fmt.Println("Supply one or two directories")
+		flag.Usage()
 		os.Exit(1)
 	}
 
 	check_dir, err = filepath.Abs(check_dir)
 	if err != nil {
-		fmt.Println("Cannot get absolute path of directory to check.")
+		log.Println("Cannot get absolute path of directory to check.")
 		log.Fatal(err)
 	}
 	check_dir = volPath(check_dir)
@@ -122,7 +123,7 @@ func main() {
 			// Set copy dir to latest tm backup
 			copy_dir, err := getTMDir()
 			if err != nil {
-				fmt.Println("Cannot get latest time machine directory.  Please supply a backup directory.")
+				log.Println("Cannot get latest time machine directory.  Please supply a backup directory.")
 				log.Fatal(err)
 			}
 			copy_dir = filepath.Join(copy_dir, check_dir)
@@ -130,7 +131,7 @@ func main() {
 	} else {
 		copy_dir, err = filepath.Abs(copy_dir)
 		if err != nil {
-			fmt.Println("Cannot get absolute path of copy directory.")
+			log.Println("Cannot get absolute path of copy directory.")
 			log.Fatal(err)
 		}
 	}
@@ -152,7 +153,7 @@ func main() {
 	}
 	db, err := newDBConnection(dbpath)
 	if err != nil {
-		fmt.Println("Cannot connect to db at " + dbpath)
+		log.Println("Cannot connect to db at " + dbpath)
 		log.Fatal(err)
 	}
 	defer closeDBConnection(db)
@@ -206,10 +207,10 @@ func main() {
 		}
 		if f.Err != nil {
 			if !quiet || f.Err.code == code_BAD_SUM {
-				fmt.Println(f.Err.Error())
+				log.Println(f.Err.Error())
 			}
 		} else if verbose {
-			fmt.Println(NewError(code_OK, f, "").Error())
+			log.Println(NewError(code_OK, f, "").Error())
 		}
 	}
 
