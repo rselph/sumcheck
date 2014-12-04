@@ -81,6 +81,7 @@ func Walker(out1, out2 chan *fileJob, path1, path2 string) {
 		defer func() { out2 <- nil }()
 	}
 
+	path1, _ = filepath.EvalSymlinks(path1)
 	filepath.Walk(path1, func(node string, info os.FileInfo, err error) error {
 		return visitFileWithAction(node, info, err, action)
 	})
