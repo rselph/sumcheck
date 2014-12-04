@@ -111,11 +111,6 @@ func main() {
 		os.Exit(1)
 	}
 
-	check_dir, err = filepath.Abs(check_dir)
-	if err != nil {
-		log.Println("Cannot get absolute path of directory to check.")
-		log.Fatal(err)
-	}
 	check_dir = volPath(check_dir)
 
 	if copy_dir == "" {
@@ -129,11 +124,7 @@ func main() {
 			copy_dir = filepath.Join(copy_dir, check_dir)
 		}
 	} else {
-		copy_dir, err = filepath.Abs(copy_dir)
-		if err != nil {
-			log.Println("Cannot get absolute path of copy directory.")
-			log.Fatal(err)
-		}
+		copy_dir = volPath(copy_dir)
 	}
 
 	if !quiet {
