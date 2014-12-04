@@ -1,13 +1,30 @@
 package main
 
 import (
-	"bufio"
-	"fmt"
 	"log"
+	"os"
 	"os/exec"
 	"path/filepath"
 	"strings"
 )
+
+func rootVolPath() string {
+	volumes, err := filepath.Glob("/Volumes/*")
+	if err != nil || volumes == nil {
+		log.Println("Unable to list /Volumes/*")
+		log.Fatal(err)
+	}
+
+	for _, volume := range volumes {
+		link_path, err := os.Readlink(volume)
+		if err == nil && link_path == "/" {
+			return volume
+		}
+	}
+
+	log.Fatal("Could not find root volume")
+	return ""
+}
 
 func volPath(target string) string {
 	var err error
@@ -18,42 +35,14 @@ func volPath(target string) string {
 	}
 	target = filepath.Clean(target)
 
-	target_list := filepath.SplitList(target)
-	if target_list[0] == "Volumes" {
+	target_list := strings.Split(target, string(filepath.Separator))
+	if len(target_list) >= 2 &&
+		target_list[0] == "" &&
+		target_list[1] == "Volumes" {
 		return target
 	}
 
-	volName := ""
-
-	cmd := exec.Command("diskutil", "info", "/")
-	stdout, err := cmd.StdoutPipe()
-	if err != nil {
-		log.Fatal(err)
-	}
-	defer stdout.Close()
-
-	if err := cmd.Start(); err != nil {
-		log.Fatal(err)
-	}
-	stdlines := bufio.NewScanner(stdout)
-	for stdlines.Scan() {
-		line := stdlines.Text()
-		if strings.HasPrefix(line, "   Volume Name:") {
-			volName = strings.Fields(line)[2]
-		}
-	}
-	if err := stdlines.Err(); err != nil {
-		fmt.Println("reading output of diskutil")
-		log.Fatal(err)
-	}
-	if err := cmd.Wait(); err != nil {
-		log.Fatal(err)
-	}
-	if volName == "" {
-		log.Fatal("Unable to determine root volume.")
-	}
-
-	return filepath.Join("/Volumes", volName, target)
+	return filepath.Join(rootVolPath(), target)
 }
 
 func getTMDir() (dirname string, err error) {
