@@ -47,7 +47,7 @@ func volPath(target string) string {
 
 func getTMDir() (dirname string, err error) {
 	dirname_bytes, err := exec.Command("tmutil", "machinedirectory").CombinedOutput()
-	if err != nil {
+	if err == nil {
 		dirname = filepath.Join(strings.TrimSpace(string(dirname_bytes)), "Latest")
 	}
 	return
