@@ -210,10 +210,10 @@ func main() {
 	if !quiet {
 		elapsed := stop.Sub(start)
 		fmt.Printf("%v bytes in %v (%v bytes per sec.)\n",
-			Eng_int64(totalIO), elapsed.String(),
+			Eng(float64(totalIO)), elapsed.String(),
 			Eng(float64(totalIO)/elapsed.Seconds()))
 		fmt.Printf("%v files in %v (%v files per sec.)\n",
-			Eng_int64(fileCount), elapsed.String(),
+			Eng(float64(fileCount)), elapsed.String(),
 			Eng(float64(fileCount)/elapsed.Seconds()))
 	}
 }
