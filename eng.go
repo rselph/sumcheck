@@ -5,7 +5,7 @@ import "fmt"
 
 func Eng(n float64) string {
 	if n == 0.0 {
-		return "    0.00E+00"
+		return "    0.00e+00"
 	}
 
 	negative := n < 0.0
@@ -20,7 +20,7 @@ func Eng(n float64) string {
 	if negative {
 		sign = "-"
 	}
-	num := fmt.Sprintf("%3.2fE%+03d", n/factor, power)
+	num := fmt.Sprintf("%3.2fe%+03d", n/factor, power)
 
 	final := fmt.Sprintf("%12s", sign+num)
 
