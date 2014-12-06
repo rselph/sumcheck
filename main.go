@@ -196,12 +196,23 @@ func main() {
 			totalIO += f.IoLen
 			fileCount++
 		}
-		if f.Err != nil {
-			if !quiet || f.Err.code == code_BAD_SUM {
+
+		switch {
+		case quiet:
+			if f.Err != nil && f.Err.code == code_BAD_SUM {
 				log.Println(f.Err.Error())
 			}
-		} else if verbose {
-			log.Println(NewError(code_OK, f, "").Error())
+
+		case verbose:
+			if f.Err == nil {
+				f.Err = NewError(code_OK, f, "")
+			}
+			log.Println(f.Err.Error())
+
+		case f.Err != nil:
+			if f.Err.code != code_NEW_SUM {
+				log.Println(f.Err.Error())
+			}
 		}
 	}
 
