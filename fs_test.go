@@ -60,6 +60,7 @@ func TestFS(t *testing.T) {
 	root := getRootVolForTest(t)
 	if root == "" {
 		t.Log("Skipping fs.go test: root volume not found.")
+		t.Fail()
 		return
 	}
 	t.Log("Using root:", root)
@@ -67,6 +68,7 @@ func TestFS(t *testing.T) {
 	cwd, err := os.Getwd()
 	if err != nil {
 		t.Log("Skipping fs.go test: current working directory not found.")
+		t.Fail()
 		return
 	}
 	t.Log("Using working directory:", cwd)
@@ -74,6 +76,7 @@ func TestFS(t *testing.T) {
 	me, err := user.Current()
 	if err != nil {
 		t.Log("Skipping fs.go test: home directory not found.")
+		t.Fail()
 		return
 	}
 	home := me.HomeDir
