@@ -72,14 +72,9 @@ func Calculator(in, out chan *fileJob, buffSize int64, rate float64) {
 	h := fnv.New64()
 	data := make([]byte, buffSize)
 
-	var reader *ReadThrottler
-	if rate == 0.0 {
-		reader = NewReadThrottler(nil)
-	} else {
-		t := new(Throttler)
-		t.Start(rate)
-		reader = NewReadThrottler(t)
-	}
+	t := new(Throttler)
+	t.Start(rate)
+	reader := NewReadThrottler(t)
 
 	for f := range in {
 		if f == nil {

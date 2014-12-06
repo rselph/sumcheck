@@ -27,7 +27,7 @@ func (rt *ReadThrottler) Start(rate float64) {
 
 func (rt *ReadThrottler) Read(p []byte) (n int, err error) {
 	n, err = rt.r.Read(p)
-	if rt.t != nil && err == nil {
+	if err == nil {
 		rt.t.Tally(int64(n))
 		rt.t.Delay()
 	}
