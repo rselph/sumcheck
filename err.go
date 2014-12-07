@@ -26,7 +26,7 @@ func (e *myError) Error() (output string) {
 		output = "    file newer"
 
 	case code_OTHER:
-		output = "error"
+		output = "         error"
 	}
 
 	if e.info != "" {
