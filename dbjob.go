@@ -50,7 +50,7 @@ func newDBConnection(path string) (db *sqlite3.Conn, err error) {
 }
 
 func closeDBConnection(db *sqlite3.Conn) {
-	db.Exec("COMMIT TRANSACTION;")
+	db.Commit()
 	db.Close()
 }
 
