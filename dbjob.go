@@ -9,7 +9,7 @@ import (
 
 const batchSize int = 100
 
-type fileDB struct {
+type FileDB struct {
 	db *sqlite3.Conn
 
 	insert     *sqlite3.Stmt
@@ -20,7 +20,49 @@ type fileDB struct {
 	//row    sqlite3.RowMap
 }
 
-func (fdb *fileDB) Close() {
+func NewFileDB(path string) (fdb *FileDB, err error) {
+	fdb = &FileDB{}
+	fdb.db, err = sqlite3.Open(path)
+	if err != nil {
+		return nil, err
+	}
+
+	err = fdb.db.Exec("CREATE TABLE IF NOT EXISTS FILES (PATH varchar not null, SIZE integer not null, MOD_TIME integer not null, MODE integer not null, CHKSUM integer not null, primary key(PATH));")
+	if err != nil {
+		fdb.Close()
+		return nil, err
+	}
+
+	//err = fdb.db.Exec("CREATE INDEX IF NOT EXISTS BYSUM on FILES (CHKSUM, SIZE);")
+	//if err != nil {
+	//	fdb.Close()
+	//	return nil, err
+	//}
+
+	fdb.insert, err = fdb.db.Prepare("insert or replace into FILES (path, size, mod_time, mode, chksum) values ($path, $size, $mod_time, $mode, $chksum);")
+	if err != nil {
+		fdb.Close()
+		return nil, err
+	}
+
+	fdb.get, err = fdb.db.Prepare("select size, mod_time, mode, chksum from FILES where path = $path;")
+	if err != nil {
+		fdb.Close()
+		return nil, err
+	}
+
+	fdb.getArgs = make(sqlite3.NamedArgs)
+
+	err = fdb.db.Begin()
+	if err != nil {
+		fdb.Close()
+		return nil, err
+	}
+
+	return
+}
+
+func (fdb *FileDB) Close() {
 	if fdb.db != nil {
 		fdb.db.Commit()
 
@@ -30,60 +72,11 @@ func (fdb *fileDB) Close() {
 		if fdb.get != nil {
 			fdb.get.Close()
 		}
+		fdb.db.Close()
 	}
 }
 
-func newDBConnection(path string) (db *sqlite3.Conn, err error) {
-	db, err = sqlite3.Open(path)
-
-	if err == nil {
-		err = db.Exec("CREATE TABLE IF NOT EXISTS FILES (PATH varchar not null, SIZE integer not null, MOD_TIME integer not null, MODE integer not null, CHKSUM integer not null, primary key(PATH));")
-	}
-
-	if err == nil {
-		err = db.Exec("CREATE INDEX IF NOT EXISTS BYSUM on FILES (CHKSUM, SIZE);")
-	}
-
-	//db.BusyTimeout(time.Second)
-
-	return
-}
-
-func closeDBConnection(db *sqlite3.Conn) {
-	db.Commit()
-	db.Close()
-}
-
-func newFileDB(db *sqlite3.Conn) (fdb *fileDB) {
-	var err error
-	fdb = &fileDB{}
-
-	fdb.db = db
-
-	fdb.insert, err = db.Prepare("insert or replace into FILES (path, size, mod_time, mode, chksum) values ($path, $size, $mod_time, $mode, $chksum);")
-	if err != nil {
-		fdb.Close()
-		log.Fatal(err)
-	}
-
-	fdb.get, err = db.Prepare("select size, mod_time, mode, chksum from FILES where path = $path;")
-	if err != nil {
-		fdb.Close()
-		log.Fatal(err)
-	}
-
-	fdb.getArgs = make(sqlite3.NamedArgs)
-
-	err = fdb.db.Begin()
-	if err != nil {
-		fdb.Close()
-		log.Fatal(err)
-	}
-
-	return
-}
-
-func (fdb *fileDB) insertOrReplace(f *fileJob) {
+func (fdb *FileDB) insertOrReplace(f *fileJob) {
 	args := make(sqlite3.NamedArgs)
 	args["$path"] = f.Fpath
 	args["$size"] = f.Info.Size()
@@ -113,7 +106,7 @@ func (fdb *fileDB) insertOrReplace(f *fileJob) {
 	return
 }
 
-func (fdb *fileDB) getForPath(f *fileJob) (row sqlite3.RowMap, err error) {
+func (fdb *FileDB) getForPath(f *fileJob) (row sqlite3.RowMap, err error) {
 	defer fdb.get.Reset()
 	fdb.getArgs["$path"] = f.Fpath
 	err = fdb.get.Query(fdb.getArgs)
@@ -131,7 +124,7 @@ func (fdb *fileDB) getForPath(f *fileJob) (row sqlite3.RowMap, err error) {
 	return
 }
 
-func CheckInDB(f *fileJob, fdb *fileDB) {
+func (fdb *FileDB) CheckInDB(f *fileJob) {
 	if f.Err != nil {
 		return
 	}
@@ -161,11 +154,8 @@ func CheckInDB(f *fileJob, fdb *fileDB) {
 	return
 }
 
-func dbChecker(in chan *fileJob, out chan *fileJob, db *sqlite3.Conn) {
+func dbChecker(in chan *fileJob, out chan *fileJob, fdb *FileDB) {
 	defer func() { out <- nil }()
-
-	fdb := newFileDB(db)
-	defer fdb.Close()
 
 	for f := range in {
 		if f == nil {
@@ -173,7 +163,7 @@ func dbChecker(in chan *fileJob, out chan *fileJob, db *sqlite3.Conn) {
 		}
 
 		if f.Err == nil {
-			CheckInDB(f, fdb)
+			fdb.CheckInDB(f)
 		}
 
 		out <- f

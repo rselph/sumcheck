@@ -142,12 +142,12 @@ func main() {
 
 		dbpath = filepath.Join(me.HomeDir, ".sumcheck.sqlite3")
 	}
-	db, err := newDBConnection(dbpath)
+	db, err := NewFileDB(dbpath)
 	if err != nil {
 		log.Println("Cannot connect to db at " + dbpath)
 		log.Fatal(err)
 	}
-	defer closeDBConnection(db)
+	defer db.Close()
 
 	initWalkers()
 
@@ -220,6 +220,7 @@ func main() {
 
 	if !quiet {
 		elapsed := stop.Sub(start)
+		fmt.Println()
 		fmt.Printf("%v bytes in %v (%v bytes per sec.)\n",
 			Eng(float64(totalIO)), elapsed.String(),
 			Eng(float64(totalIO)/elapsed.Seconds()))
