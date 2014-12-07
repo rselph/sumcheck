@@ -116,12 +116,11 @@ func main() {
 	if copy_dir == "" {
 		if tm {
 			// Set copy dir to latest tm backup
-			copy_dir, err := getTMDir()
+			copy_dir, err = getTMDir(check_dir)
 			if err != nil {
 				log.Println("Cannot get latest time machine directory.  Please supply a backup directory.")
 				log.Fatal(err)
 			}
-			copy_dir = filepath.Join(copy_dir, check_dir)
 		}
 	} else {
 		copy_dir = volPath(copy_dir)

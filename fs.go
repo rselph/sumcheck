@@ -45,10 +45,12 @@ func volPath(target string) string {
 	return filepath.Join(rootVolPath(), target)
 }
 
-func getTMDir() (dirname string, err error) {
+func getTMDir(target string) (dirname string, err error) {
 	dirname_bytes, err := exec.Command("tmutil", "machinedirectory").CombinedOutput()
 	if err == nil {
 		dirname = filepath.Join(strings.TrimSpace(string(dirname_bytes)), "Latest")
+		target_list := strings.Split(target, string(filepath.Separator))
+		dirname = filepath.Join(dirname, strings.Join(target_list[2:], string(filepath.Separator)))
 	}
 	return
 }
