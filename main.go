@@ -7,6 +7,7 @@ import (
 	"os"
 	"os/user"
 	"path/filepath"
+	"regexp"
 	"runtime"
 	"time"
 )
@@ -221,10 +222,23 @@ func main() {
 		elapsed := stop.Sub(start)
 		fmt.Println()
 		fmt.Printf("%v bytes in %v (%v bytes per sec.)\n",
-			Eng(float64(totalIO)), elapsed.String(),
+			Eng(float64(totalIO)), prettyDuration(elapsed),
 			Eng(float64(totalIO)/elapsed.Seconds()))
 		fmt.Printf("%v files in %v (%v files per sec.)\n",
-			Eng(float64(fileCount)), elapsed.String(),
+			Eng(float64(fileCount)), prettyDuration(elapsed),
 			Eng(float64(fileCount)/elapsed.Seconds()))
 	}
+}
+
+var re = regexp.MustCompile(`(.*)(\.[[:digit:]]+)(.*)`)
+
+func prettyDuration(d time.Duration) string {
+	raw := d.String()
+
+	parts := re.FindStringSubmatch(raw)
+	if parts == nil || parts[0] == "" {
+		return raw
+	}
+
+	return parts[1] + parts[3]
 }
