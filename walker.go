@@ -9,7 +9,8 @@ import (
 var excludeFiles = []string{
 	`^.*-shm$`,
 	`^\.DS_Store$`,
-	`^.*.sqlite3$`,
+	`^.sumcheck\.sqlite3$`,
+	`^.sumcheck\.sqlite3-journal$`,
 }
 var excludeFileRegexp []*regexp.Regexp
 
@@ -22,6 +23,7 @@ var excludeDirs = []string{
 	`^/Volumes/[^/]+/\.Trashes$`,
 	`^/Volumes/[^/]+/\.fseventsd$`,
 	`^/Volumes/[^/]+/\.vol$`,
+	`^.*/Caches/.*$`,
 }
 var excludeDirRegexp []*regexp.Regexp
 
