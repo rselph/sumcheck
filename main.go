@@ -210,7 +210,7 @@ func main() {
 			log.Println(f.Err.Error())
 
 		case f.Err != nil:
-			if f.Err.code != code_NEW_SUM {
+			if f.Err.code != code_NEW_SUM && f.Err.code != code_NOT_FOUND {
 				log.Println(f.Err.Error())
 			}
 		}

@@ -16,11 +16,9 @@ type fileJob struct {
 }
 
 func (f *fileJob) Stat() {
-	var err error
-
 	if f.Info == nil {
-		f.Info, err = os.Stat(f.Fpath)
-		f.Err = WrapError(err)
+		f.Info, _ = os.Stat(f.Fpath)
+		f.Err = NewError(code_NOT_FOUND, f, "could not stat file")
 	}
 }
 
