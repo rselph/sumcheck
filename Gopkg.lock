@@ -2,7 +2,6 @@
 
 
 [[projects]]
-  branch = "master"
   name = "github.com/mxk/go-sqlite"
   packages = ["sqlite3"]
   revision = "167da9432e1f4602e95ea67b67051cfa34412e3f"
@@ -10,6 +9,6 @@
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "991a1940783fa34937ae9123f5eed66780dd35e30ca32331cbdb4b4850cb8c2e"
+  inputs-digest = "871b2dc5105f40e09347bb14ac7fdbacec6a7c9cd9e63ab460425f206d947db1"
   solver-name = "gps-cdcl"
   solver-version = 1

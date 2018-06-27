@@ -26,9 +26,8 @@
 
 
 [[constraint]]
-  branch = "v1"
   name = "github.com/mxk/go-sqlite"
+  revision = "167da9432e1f4602e95ea67b67051cfa34412e3f"
 
 [prune]
   go-tests = true
-  unused-packages = true
